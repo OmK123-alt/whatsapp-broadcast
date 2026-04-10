@@ -7,7 +7,11 @@ import LectureUpdates from "./LectureUpdates";
 import QRScreen from "./QRScreen";
 
 export default function Dashboard({ waStatus, qr }) {
-  const [view, setView] = useState("whatsapp"); // whatsapp | telegram | instagram | lecture-updates | history
+  const [view, setView] = useState("history"); // whatsapp | telegram | instagram | lecture-updates | history
+  const [showWhatsAppQR, setShowWhatsAppQR] = useState(false);
+  const [telegramConnected, setTelegramConnected] = useState(false);
+  const [showTelegramQR, setShowTelegramQR] = useState(false);
+  const [instagramConnected, setInstagramConnected] = useState(false);
   const waConnected = waStatus === "connected";
 
   return (
@@ -98,18 +102,101 @@ export default function Dashboard({ waStatus, qr }) {
 
         <div style={styles.content}>
           {view === "whatsapp" ? (
-            waConnected ? <NewBroadcast /> : <QRScreen status={waStatus} qr={qr} />
+            waConnected ? (
+              <NewBroadcast />
+            ) : showWhatsAppQR ? (
+              <QRScreen status={waStatus} qr={qr} />
+            ) : (
+              <PlatformGate
+                title="Login to WhatsApp"
+                subtitle="Connect WhatsApp for this platform only."
+                buttonText="Open WhatsApp QR"
+                onClick={() => setShowWhatsAppQR(true)}
+              />
+            )
           ) : view === "telegram" ? (
-            <TelegramComposer />
+            telegramConnected ? (
+              <TelegramComposer />
+            ) : (
+              <TelegramGate
+                showQR={showTelegramQR}
+                onOpenQR={() => setShowTelegramQR(true)}
+                onConnected={() => setTelegramConnected(true)}
+              />
+            )
           ) : view === "lecture-updates" ? (
             <LectureUpdates />
           ) : view === "history" ? (
             <BroadcastHistory />
+          ) : view === "instagram" ? (
+            instagramConnected ? (
+              <PlatformPlaceholder platform={view} />
+            ) : (
+              <InstagramGate onConnected={() => setInstagramConnected(true)} />
+            )
           ) : (
             <PlatformPlaceholder platform={view} />
           )}
         </div>
       </main>
+    </div>
+  );
+}
+
+function PlatformGate({ title, subtitle, buttonText, onClick }) {
+  return (
+    <div style={styles.gate}>
+      <h3 style={styles.placeholderTitle}>{title}</h3>
+      <p style={styles.placeholderText}>{subtitle}</p>
+      <button style={styles.gateButton} onClick={onClick}>{buttonText}</button>
+    </div>
+  );
+}
+
+function TelegramGate({ showQR, onOpenQR, onConnected }) {
+  return (
+    <div style={styles.gate}>
+      <h3 style={styles.placeholderTitle}>Login to Telegram</h3>
+      <p style={styles.placeholderText}>Scan QR and then continue to Telegram composer.</p>
+      {!showQR ? (
+        <button style={styles.gateButton} onClick={onOpenQR}>Show Telegram QR</button>
+      ) : (
+        <>
+          <div style={styles.fakeQR}>TELEGRAM QR</div>
+          <button style={styles.gateButton} onClick={onConnected}>I have logged in</button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function InstagramGate({ onConnected }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  return (
+    <div style={styles.gate}>
+      <h3 style={styles.placeholderTitle}>Login to Instagram</h3>
+      <p style={styles.placeholderText}>Enter Instagram ID and password for this platform.</p>
+      <input
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        placeholder="Instagram ID"
+        style={styles.gateInput}
+      />
+      <input
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder="Password"
+        type="password"
+        style={styles.gateInput}
+      />
+      <button
+        style={styles.gateButton}
+        onClick={onConnected}
+        disabled={!username.trim() || !password.trim()}
+      >
+        Login to Instagram
+      </button>
     </div>
   );
 }
@@ -205,6 +292,46 @@ const styles = {
     fontSize: "0.78rem", color: "var(--accent2)", marginTop: "4px"
   },
   content: { padding: "24px 36px 36px", flex: 1 },
+  gate: {
+    background: "var(--bg2)",
+    border: "1px solid var(--border)",
+    borderRadius: "var(--radius)",
+    padding: "28px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+    maxWidth: 500
+  },
+  gateButton: {
+    marginTop: "6px",
+    width: "fit-content",
+    background: "linear-gradient(135deg, var(--accent), #6e3dff)",
+    color: "#fff",
+    borderRadius: "8px",
+    padding: "10px 14px",
+    fontFamily: "'Syne', sans-serif",
+    fontWeight: 700
+  },
+  gateInput: {
+    maxWidth: 320,
+    background: "var(--bg)",
+    border: "1px solid var(--border)",
+    borderRadius: "8px",
+    padding: "10px 12px",
+    color: "var(--text)"
+  },
+  fakeQR: {
+    width: 180,
+    height: 180,
+    border: "2px dashed var(--border)",
+    borderRadius: "10px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "var(--text-muted)",
+    fontSize: "0.85rem",
+    marginTop: "8px"
+  },
   placeholder: {
     background: "var(--bg2)",
     border: "1px solid var(--border)",
