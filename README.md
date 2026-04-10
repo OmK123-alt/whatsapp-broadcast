@@ -113,6 +113,10 @@ This repository is now configured with a root `vercel.json`:
   - If frontend and API are on the same Vercel project/domain: leave empty
   - If API is hosted on a different domain: set full URL (example: `https://api.example.com`)
 
+- `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `AUTH_TOKEN`
+  - Used for portal login protection.
+  - Set strong values in production.
+
 ### Notes for this specific project
 
 - `whatsapp-web.js` + Puppeteer + `LocalAuth` expects long-running/persistent server state.

@@ -204,8 +204,28 @@ async function sendTextBroadcast({ caption, groupIds }) {
   return results;
 }
 
+async function logoutClient() {
+  try {
+    if (!client) {
+      connectionStatus = "disconnected";
+      qrCodeData = null;
+      connectedGroups = [];
+      return;
+    }
+
+    await client.logout().catch(() => {});
+    await client.destroy().catch(() => {});
+  } finally {
+    client = null;
+    connectionStatus = "disconnected";
+    qrCodeData = null;
+    connectedGroups = [];
+    isInitializing = false;
+  }
+}
+
 function getStatus() { return connectionStatus; }
 function getQR()     { return qrCodeData; }
 function getGroups() { return connectedGroups; }
 
-module.exports = { initClient, sendBroadcast, sendTextBroadcast, refreshGroups, getStatus, getQR, getGroups };
+module.exports = { initClient, sendBroadcast, sendTextBroadcast, logoutClient, refreshGroups, getStatus, getQR, getGroups };

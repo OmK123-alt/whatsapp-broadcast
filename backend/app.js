@@ -12,6 +12,9 @@ const { hasTelegramBotToken } = require("./telegram");
 const lectureUpdates = require("./lectureUpdates");
 
 const app = express();
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin@sharda";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Sharda@2026!WA";
+const AUTH_TOKEN = process.env.AUTH_TOKEN || "wa-portal-auth-token";
 
 function getAllowedOrigins() {
   const envOrigins = (process.env.FRONTEND_URL || "")
@@ -46,6 +49,44 @@ app.use(
   })
 );
 app.use(express.json());
+
+app.post("/api/auth/login", (req, res) => {
+  const { username, password } = req.body || {};
+  if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: "Invalid credentials" });
+  }
+  return res.json({
+    token: AUTH_TOKEN,
+    user: { username: ADMIN_USERNAME }
+  });
+});
+
+app.get("/api/auth/me", (req, res) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  if (token !== AUTH_TOKEN) return res.status(401).json({ error: "Unauthorized" });
+  return res.json({ user: { username: ADMIN_USERNAME } });
+});
+
+app.post("/api/auth/logout", async (req, res) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  if (token !== AUTH_TOKEN) return res.status(401).json({ error: "Unauthorized" });
+
+  try {
+    await wa.logoutClient();
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.use("/api", (req, res, next) => {
+  if (req.path === "/auth/login" || req.path === "/auth/me" || req.path === "/auth/logout") return next();
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  if (token !== AUTH_TOKEN) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  return next();
+});
 
 const UPLOADS_DIR = process.env.VERCEL
   ? path.join("/tmp", "uploads")
