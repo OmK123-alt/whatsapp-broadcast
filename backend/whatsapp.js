@@ -4,6 +4,10 @@ const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
 const qrcode = require("qrcode");
 const path = require("path");
 
+const authDataPath = process.env.VERCEL
+  ? path.join("/tmp", ".wwebjs_auth")
+  : path.join(__dirname, ".wwebjs_auth");
+
 let client = null;
 let qrCodeData = null;
 let connectionStatus = "disconnected";
@@ -19,7 +23,7 @@ function initClient() {
   client = new Client({
     authStrategy: new LocalAuth({
       clientId: "sharda-academy",
-      dataPath: path.join(__dirname, ".wwebjs_auth")
+      dataPath: authDataPath
     }),
     bypassCSP: true,
     restartOnAuthFail: true,
@@ -178,8 +182,30 @@ async function sendBroadcast({ imagePath, caption, groupIds }) {
   return results;
 }
 
+async function sendTextBroadcast({ caption, groupIds }) {
+  if (connectionStatus !== "connected") {
+    throw new Error("WhatsApp is not connected");
+  }
+
+  const results = [];
+
+  for (const groupId of groupIds) {
+    try {
+      await client.sendMessage(groupId, caption);
+      results.push({ groupId, status: "sent" });
+      console.log(`[WA] Text sent to ${groupId}`);
+      await new Promise((r) => setTimeout(r, 1200));
+    } catch (err) {
+      results.push({ groupId, status: "failed", error: err.message });
+      console.error(`[WA] Text failed for ${groupId}:`, err.message);
+    }
+  }
+
+  return results;
+}
+
 function getStatus() { return connectionStatus; }
 function getQR()     { return qrCodeData; }
 function getGroups() { return connectedGroups; }
 
-module.exports = { initClient, sendBroadcast, refreshGroups, getStatus, getQR, getGroups };
+module.exports = { initClient, sendBroadcast, sendTextBroadcast, refreshGroups, getStatus, getQR, getGroups };

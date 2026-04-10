@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Toaster } from "react-hot-toast";
-import axios from "axios";
+import api from "./api";
 import QRScreen from "./components/QRScreen";
 import Dashboard from "./components/Dashboard";
 
@@ -10,7 +10,7 @@ export default function App() {
 
   const pollStatus = async () => {
     try {
-      const { data } = await axios.get("/api/wa/status");
+      const { data } = await api.get("/api/wa/status");
       setWaStatus(data.status);
       setQR(data.qr || null);
     } catch {

@@ -93,3 +93,35 @@ npm run dev
 This portal uses the unofficial `whatsapp-web.js` library.
 Use it responsibly — avoid spamming. WhatsApp may ban accounts that send bulk messages too rapidly.
 The 1.2-second delay between messages is intentional to avoid rate limiting.
+
+---
+
+## ▲ Deploy on Vercel
+
+This repository is now configured with a root `vercel.json`:
+- Frontend build output: `frontend/dist`
+- API function entrypoint: `api/index.js` (routes `/api/*`)
+
+### Environment variables (Vercel Project Settings)
+
+- `FRONTEND_URL`  
+  Set to your deployed frontend URL (or comma-separated list for multiple allowed origins).  
+  Example: `https://your-project.vercel.app`
+  - Preview deployments are also allowed automatically for `*.vercel.app`.
+
+- `VITE_API_BASE_URL`  
+  - If frontend and API are on the same Vercel project/domain: leave empty
+  - If API is hosted on a different domain: set full URL (example: `https://api.example.com`)
+
+### Notes for this specific project
+
+- `whatsapp-web.js` + Puppeteer + `LocalAuth` expects long-running/persistent server state.
+- Vercel serverless functions are ephemeral, so WhatsApp login/session persistence and scheduled jobs may reset on cold starts/redeploys.
+- For production reliability, keep frontend on Vercel and host backend on a persistent server (VM/container) if you need stable WhatsApp connection and scheduling.
+
+### Quick deploy steps
+
+1. Import this repo in Vercel.
+2. Root directory: project root (`whatsapp-broadcast`).
+3. Add env vars from `.env.example`.
+4. Deploy.

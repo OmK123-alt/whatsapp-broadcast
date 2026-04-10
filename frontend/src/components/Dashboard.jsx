@@ -1,10 +1,12 @@
 import React, { useState } from "react";
-import { Megaphone, History, Wifi } from "lucide-react";
+import { Megaphone, History, Wifi, Send, Instagram, BookOpen } from "lucide-react";
 import NewBroadcast from "./NewBroadcast";
 import BroadcastHistory from "./BroadcastHistory";
+import TelegramComposer from "./TelegramComposer";
+import LectureUpdates from "./LectureUpdates";
 
 export default function Dashboard({ waStatus }) {
-  const [view, setView] = useState("new"); // new | history
+  const [view, setView] = useState("whatsapp"); // whatsapp | telegram | instagram | lecture-updates | history
 
   return (
     <div style={styles.layout}>
@@ -21,9 +23,27 @@ export default function Dashboard({ waStatus }) {
         <nav style={styles.nav}>
           <NavItem
             icon={<Megaphone size={17} />}
-            label="New Broadcast"
-            active={view === "new"}
-            onClick={() => setView("new")}
+            label="WhatsApp"
+            active={view === "whatsapp"}
+            onClick={() => setView("whatsapp")}
+          />
+          <NavItem
+            icon={<Send size={17} />}
+            label="Telegram"
+            active={view === "telegram"}
+            onClick={() => setView("telegram")}
+          />
+          <NavItem
+            icon={<Instagram size={17} />}
+            label="Instagram"
+            active={view === "instagram"}
+            onClick={() => setView("instagram")}
+          />
+          <NavItem
+            icon={<BookOpen size={17} />}
+            label="Lecture Updates"
+            active={view === "lecture-updates"}
+            onClick={() => setView("lecture-updates")}
           />
           <NavItem
             icon={<History size={17} />}
@@ -44,11 +64,25 @@ export default function Dashboard({ waStatus }) {
         <div style={styles.topbar}>
           <div>
             <h2 style={styles.pageTitle}>
-              {view === "new" ? "New Broadcast" : "Broadcast History"}
+              {view === "whatsapp"
+                ? "WhatsApp Broadcast"
+                : view === "telegram"
+                  ? "Telegram Broadcast"
+                  : view === "instagram"
+                    ? "Instagram Broadcast"
+                    : view === "lecture-updates"
+                      ? "Lecture Updates"
+                    : "Broadcast History"}
             </h2>
             <p style={styles.pageSubtitle}>
-              {view === "new"
+              {view === "whatsapp"
                 ? "Upload a batch poster and send it to your student groups"
+                : view === "telegram"
+                  ? "Compose and send Telegram campaigns to channels/chats"
+                  : view === "instagram"
+                    ? "Instagram module placeholder for upcoming integration"
+                  : view === "lecture-updates"
+                    ? "Lecture update workflow placeholder"
                 : "Track all scheduled and sent broadcasts"}
             </p>
           </div>
@@ -59,9 +93,35 @@ export default function Dashboard({ waStatus }) {
         </div>
 
         <div style={styles.content}>
-          {view === "new" ? <NewBroadcast /> : <BroadcastHistory />}
+          {view === "whatsapp" ? (
+            <NewBroadcast />
+          ) : view === "telegram" ? (
+            <TelegramComposer />
+          ) : view === "lecture-updates" ? (
+            <LectureUpdates />
+          ) : view === "history" ? (
+            <BroadcastHistory />
+          ) : (
+            <PlatformPlaceholder platform={view} />
+          )}
         </div>
       </main>
+    </div>
+  );
+}
+
+function PlatformPlaceholder({ platform }) {
+  const label = platform === "telegram"
+    ? "Telegram"
+    : platform === "instagram"
+      ? "Instagram"
+      : "Lecture Updates";
+  return (
+    <div style={styles.placeholder}>
+      <h3 style={styles.placeholderTitle}>{label} integration coming soon</h3>
+      <p style={styles.placeholderText}>
+        This section is ready in the sidebar. You can add campaign composer, audience mapping, and scheduling for {label} next.
+      </p>
     </div>
   );
 }
@@ -140,5 +200,21 @@ const styles = {
     background: "rgba(0,230,160,0.08)", border: "1px solid rgba(0,230,160,0.15)",
     fontSize: "0.78rem", color: "var(--accent2)", marginTop: "4px"
   },
-  content: { padding: "24px 36px 36px", flex: 1 }
+  content: { padding: "24px 36px 36px", flex: 1 },
+  placeholder: {
+    background: "var(--bg2)",
+    border: "1px solid var(--border)",
+    borderRadius: "var(--radius)",
+    padding: "28px"
+  },
+  placeholderTitle: {
+    fontFamily: "'Syne', sans-serif",
+    fontSize: "1.05rem",
+    color: "var(--text)"
+  },
+  placeholderText: {
+    fontSize: "0.9rem",
+    color: "var(--text-muted)",
+    marginTop: "8px"
+  }
 };

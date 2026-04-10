@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import api from "../api";
 import toast from "react-hot-toast";
 import {
   Upload, X, Calendar, Clock, Send, Users, Image as ImageIcon,
@@ -10,6 +10,7 @@ export default function NewBroadcast() {
   const [groups, setGroups]         = useState([]);
   const [loadingGroups, setLoading] = useState(true);
   const [selectedGroups, setSelected] = useState([]);
+  const [groupSearch, setGroupSearch] = useState("");
   const [caption, setCaption]       = useState("");
   const [imageFile, setImageFile]   = useState(null);
   const [imagePreview, setPreview]  = useState(null);
@@ -24,7 +25,7 @@ export default function NewBroadcast() {
   const loadGroups = async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get("/api/wa/groups", { timeout: 20000 });
+      const { data } = await api.get("/api/wa/groups", { timeout: 20000 });
       setGroups(data);
       if (data.length === 0) toast("No groups found. Make sure WhatsApp is connected.", { icon: "⚠️" });
     } catch (err) {
@@ -56,8 +57,20 @@ export default function NewBroadcast() {
   };
 
   const toggleAll = () => {
-    setSelected(selectedGroups.length === groups.length ? [] : groups.map((g) => g.id));
+    const filteredIds = filteredGroups.map((g) => g.id);
+    const allFilteredSelected = filteredIds.every((id) => selectedGroups.includes(id));
+
+    if (allFilteredSelected) {
+      setSelected((prev) => prev.filter((id) => !filteredIds.includes(id)));
+      return;
+    }
+
+    setSelected((prev) => Array.from(new Set([...prev, ...filteredIds])));
   };
+
+  const filteredGroups = groups.filter((g) =>
+    g.name.toLowerCase().includes(groupSearch.toLowerCase())
+  );
 
   const handleSubmit = async () => {
     if (!imageFile) return toast.error("Please upload a banner image");
@@ -74,7 +87,7 @@ export default function NewBroadcast() {
 
     setSending(true);
     try {
-      await axios.post("/api/broadcasts", fd);
+      await api.post("/api/broadcasts", fd);
       toast.success(scheduleMode === "now" ? "✅ Broadcast sent!" : "📅 Broadcast scheduled!");
       // Reset form
       setImageFile(null); setPreview(null);
@@ -191,17 +204,31 @@ export default function NewBroadcast() {
             </div>
           ) : (
             <>
+              <input
+                type="text"
+                placeholder="Search groups..."
+                value={groupSearch}
+                onChange={(e) => setGroupSearch(e.target.value)}
+                style={{ ...styles.input, marginBottom: "10px" }}
+              />
+
               {/* Select All */}
               <button style={styles.selectAllBtn} onClick={toggleAll}>
-                {selectedGroups.length === groups.length
+                {filteredGroups.length > 0 && filteredGroups.every((g) => selectedGroups.includes(g.id))
                   ? <CheckSquare size={15} color="var(--accent)" />
                   : <Square size={15} color="var(--text-muted)" />}
-                <span>{selectedGroups.length === groups.length ? "Deselect All" : "Select All"}</span>
-                <span style={styles.countBadge}>{selectedGroups.length}/{groups.length}</span>
+                <span>
+                  {filteredGroups.length > 0 && filteredGroups.every((g) => selectedGroups.includes(g.id))
+                    ? "Deselect Visible"
+                    : "Select Visible"}
+                </span>
+                <span style={styles.countBadge}>
+                  {filteredGroups.filter((g) => selectedGroups.includes(g.id)).length}/{filteredGroups.length}
+                </span>
               </button>
 
               <div style={styles.groupList}>
-                {groups.map((g) => {
+                {filteredGroups.map((g) => {
                   const active = selectedGroups.includes(g.id);
                   return (
                     <button
@@ -219,6 +246,12 @@ export default function NewBroadcast() {
                     </button>
                   );
                 })}
+                {filteredGroups.length === 0 && (
+                  <div style={styles.emptyGroups}>
+                    <Users size={24} color="var(--text-muted)" />
+                    <p>No matching groups found.</p>
+                  </div>
+                )}
               </div>
             </>
           )}

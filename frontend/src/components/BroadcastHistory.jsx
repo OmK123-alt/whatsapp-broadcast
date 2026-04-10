@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../api";
 import { RefreshCw, Trash2, CheckCircle2, Clock, AlertCircle, Loader2, Send } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -10,8 +10,24 @@ export default function BroadcastHistory() {
   const load = async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get("/api/broadcasts");
-      setBroadcasts(data);
+      const [waRes, tgRes] = await Promise.all([
+        api.get("/api/broadcasts"),
+        api.get("/api/telegram/broadcasts").catch(() => ({ data: [] }))
+      ]);
+
+      const whatsapp = (waRes.data || []).map((item) => ({
+        ...item,
+        platform: item.platform || "whatsapp"
+      }));
+      const telegram = (tgRes.data || []).map((item) => ({
+        ...item,
+        platform: item.platform || "telegram"
+      }));
+
+      const merged = [...whatsapp, ...telegram].sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+      setBroadcasts(merged);
     } catch {
       toast.error("Failed to load history");
     } finally {
@@ -21,9 +37,13 @@ export default function BroadcastHistory() {
 
   useEffect(() => { load(); }, []);
 
-  const cancel = async (id) => {
+  const cancel = async (broadcast) => {
     try {
-      await axios.delete(`/api/broadcasts/${id}`);
+      const isTelegram = (broadcast.platform || "").toLowerCase() === "telegram";
+      const path = isTelegram
+        ? `/api/telegram/broadcasts/${broadcast.id}`
+        : `/api/broadcasts/${broadcast.id}`;
+      await api.delete(path);
       toast.success("Broadcast cancelled");
       load();
     } catch {
@@ -58,7 +78,7 @@ export default function BroadcastHistory() {
 
       <div style={styles.list}>
         {broadcasts.map((b) => (
-          <BroadcastCard key={b.id} broadcast={b} onCancel={cancel} />
+          <BroadcastCard key={`${b.platform || "whatsapp"}-${b.id}`} broadcast={b} onCancel={cancel} />
         ))}
       </div>
       <style>{`@keyframes spin { from{transform:rotate(0deg)}to{transform:rotate(360deg)} }`}</style>
@@ -68,6 +88,7 @@ export default function BroadcastHistory() {
 
 function BroadcastCard({ broadcast: b, onCancel }) {
   const [expanded, setExpanded] = useState(false);
+  const isTelegram = (b.platform || "").toLowerCase() === "telegram";
 
   const statusIcon = {
     sent: <CheckCircle2 size={14} color="var(--success)" />,
@@ -90,6 +111,9 @@ function BroadcastCard({ broadcast: b, onCancel }) {
         <div style={styles.cardMeta}>
           <div style={styles.cardTitleRow}>
             <span style={styles.cardTitle}>{b.batchName}</span>
+            <span style={styles.platformPill(isTelegram)}>
+              {isTelegram ? "Telegram" : "WhatsApp"}
+            </span>
             <span className={`tag tag-${b.status}`}>
               {statusIcon[b.status]} {b.status}
             </span>
@@ -97,7 +121,9 @@ function BroadcastCard({ broadcast: b, onCancel }) {
           <p style={styles.cardCaption}>{b.caption.slice(0, 120)}{b.caption.length > 120 ? "..." : ""}</p>
           <div style={styles.cardFooter}>
             <span style={styles.metaItem}>
-              👥 {b.groupIds.length} group{b.groupIds.length !== 1 ? "s" : ""}
+              {isTelegram
+                ? `📣 ${(b.targetIds || []).length} target${(b.targetIds || []).length !== 1 ? "s" : ""}`
+                : `👥 ${(b.groupIds || []).length} group${(b.groupIds || []).length !== 1 ? "s" : ""}`}
             </span>
             {b.sentAt && (
               <span style={styles.metaItem}>
@@ -116,7 +142,7 @@ function BroadcastCard({ broadcast: b, onCancel }) {
         </div>
 
         {b.status === "scheduled" && (
-          <button style={styles.cancelBtn} onClick={(e) => { e.stopPropagation(); onCancel(b.id); }}>
+          <button style={styles.cancelBtn} onClick={(e) => { e.stopPropagation(); onCancel(b); }}>
             <Trash2 size={13} />
           </button>
         )}
@@ -182,6 +208,15 @@ const styles = {
     display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px", flexWrap: "wrap"
   },
   cardTitle: { fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: "0.95rem" },
+  platformPill: (isTelegram) => ({
+    fontSize: "0.7rem",
+    borderRadius: "999px",
+    padding: "2px 8px",
+    border: "1px solid",
+    borderColor: isTelegram ? "rgba(34,158,217,0.35)" : "rgba(37,211,102,0.35)",
+    color: isTelegram ? "#229ed9" : "#25d366",
+    background: isTelegram ? "rgba(34,158,217,0.12)" : "rgba(37,211,102,0.12)"
+  }),
   cardCaption: { fontSize: "0.83rem", color: "var(--text-sub)", lineHeight: 1.5, marginBottom: "8px" },
   cardFooter: { display: "flex", flexWrap: "wrap", gap: "10px" },
   metaItem: { fontSize: "0.75rem", color: "var(--text-muted)" },
