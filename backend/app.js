@@ -50,10 +50,16 @@ app.use(
 );
 app.use(express.json());
 
-app.post("/api/auth/login", (req, res) => {
+app.post("/api/auth/login", async (req, res) => {
   const { username, password } = req.body || {};
   if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
     return res.status(401).json({ error: "Invalid credentials" });
+  }
+  try {
+    // Fresh login starts with a fresh WhatsApp session.
+    await wa.logoutClient();
+  } catch (err) {
+    console.error("[Auth] WhatsApp logout on login failed:", err.message);
   }
   return res.json({
     token: AUTH_TOKEN,

@@ -4,9 +4,11 @@ import NewBroadcast from "./NewBroadcast";
 import BroadcastHistory from "./BroadcastHistory";
 import TelegramComposer from "./TelegramComposer";
 import LectureUpdates from "./LectureUpdates";
+import QRScreen from "./QRScreen";
 
-export default function Dashboard({ waStatus }) {
+export default function Dashboard({ waStatus, qr }) {
   const [view, setView] = useState("whatsapp"); // whatsapp | telegram | instagram | lecture-updates | history
+  const waConnected = waStatus === "connected";
 
   return (
     <div style={styles.layout}>
@@ -55,7 +57,9 @@ export default function Dashboard({ waStatus }) {
 
         <div style={styles.statusBadge}>
           <span style={styles.statusDot} />
-          <span style={{ fontSize: "0.78rem", color: "var(--accent2)" }}>WhatsApp Connected</span>
+          <span style={{ fontSize: "0.78rem", color: waConnected ? "var(--accent2)" : "var(--text-muted)" }}>
+            {waConnected ? "WhatsApp Connected" : "WhatsApp Not Connected"}
+          </span>
         </div>
       </aside>
 
@@ -87,14 +91,14 @@ export default function Dashboard({ waStatus }) {
             </p>
           </div>
           <div style={styles.waChip}>
-            <Wifi size={13} color="var(--accent2)" />
-            <span>Connected</span>
+            <Wifi size={13} color={waConnected ? "var(--accent2)" : "var(--text-muted)"} />
+            <span>{waConnected ? "Connected" : "Not Connected"}</span>
           </div>
         </div>
 
         <div style={styles.content}>
           {view === "whatsapp" ? (
-            <NewBroadcast />
+            waConnected ? <NewBroadcast /> : <QRScreen status={waStatus} qr={qr} />
           ) : view === "telegram" ? (
             <TelegramComposer />
           ) : view === "lecture-updates" ? (

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import api from "./api";
-import QRScreen from "./components/QRScreen";
 import Dashboard from "./components/Dashboard";
 
 export default function App() {
@@ -136,11 +135,7 @@ export default function App() {
           <div style={styles.logoutBar}>
             <button style={styles.logoutBtn} onClick={handleLogout}>Logout</button>
           </div>
-          {waStatus === "connected" ? (
-            <Dashboard waStatus={waStatus} />
-          ) : (
-            <QRScreen status={waStatus} qr={qr} />
-          )}
+          <Dashboard waStatus={waStatus} qr={qr} />
         </>
       )}
     </>
