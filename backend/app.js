@@ -136,20 +136,37 @@ app.get("/api/wa/status", (req, res) => {
   }
 });
 
+app.post("/api/wa/init", (req, res) => {
+  try {
+    wa.initClient();
+    res.json({ success: true, status: wa.getStatus() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get("/api/wa/groups", async (req, res) => {
   try {
     if (wa.getStatus() !== "connected") {
       return res.json([]);
     }
 
+    const cachedGroups = wa.getGroups();
+    if (cachedGroups.length > 0) {
+      wa.refreshGroups().catch((err) => {
+        console.error("[Groups] Background refresh error:", err.message);
+      });
+      return res.json(cachedGroups);
+    }
+
     const timeout = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Timeout fetching groups")), 15000)
+      setTimeout(() => reject(new Error("Timeout fetching groups")), 30000)
     );
     const groups = await Promise.race([wa.refreshGroups(), timeout]);
-    res.json(groups);
+    return res.json(groups);
   } catch (err) {
     console.error("[Groups] Error:", err.message);
-    res.json(wa.getGroups());
+    return res.json(wa.getGroups());
   }
 });
 

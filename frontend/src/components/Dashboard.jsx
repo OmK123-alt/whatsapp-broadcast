@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Megaphone, History, Wifi, Send, Instagram, BookOpen } from "lucide-react";
+import api from "../api";
 import NewBroadcast from "./NewBroadcast";
 import BroadcastHistory from "./BroadcastHistory";
 import TelegramComposer from "./TelegramComposer";
@@ -12,7 +13,18 @@ export default function Dashboard({ waStatus, qr }) {
   const [telegramConnected, setTelegramConnected] = useState(false);
   const [showTelegramQR, setShowTelegramQR] = useState(false);
   const [instagramConnected, setInstagramConnected] = useState(false);
+  const [initializingWhatsApp, setInitializingWhatsApp] = useState(false);
   const waConnected = waStatus === "connected";
+
+  const openWhatsAppQR = async () => {
+    setInitializingWhatsApp(true);
+    try {
+      await api.post("/api/wa/init");
+      setShowWhatsAppQR(true);
+    } finally {
+      setInitializingWhatsApp(false);
+    }
+  };
 
   return (
     <div style={styles.layout}>
@@ -110,8 +122,9 @@ export default function Dashboard({ waStatus, qr }) {
               <PlatformGate
                 title="Login to WhatsApp"
                 subtitle="Connect WhatsApp for this platform only."
-                buttonText="Open WhatsApp QR"
-                onClick={() => setShowWhatsAppQR(true)}
+                buttonText={initializingWhatsApp ? "Initializing..." : "Open WhatsApp QR"}
+                onClick={openWhatsAppQR}
+                disabled={initializingWhatsApp}
               />
             )
           ) : view === "telegram" ? (
@@ -143,12 +156,12 @@ export default function Dashboard({ waStatus, qr }) {
   );
 }
 
-function PlatformGate({ title, subtitle, buttonText, onClick }) {
+function PlatformGate({ title, subtitle, buttonText, onClick, disabled }) {
   return (
     <div style={styles.gate}>
       <h3 style={styles.placeholderTitle}>{title}</h3>
       <p style={styles.placeholderText}>{subtitle}</p>
-      <button style={styles.gateButton} onClick={onClick}>{buttonText}</button>
+      <button style={styles.gateButton} onClick={onClick} disabled={disabled}>{buttonText}</button>
     </div>
   );
 }
